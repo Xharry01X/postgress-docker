@@ -1,13 +1,27 @@
 version: '3.9'
 
 services:
-  fastAPI-test:
+  db:
     image: postgres:16.3-alpine3.20
     restart: always
     ports:
-      - "5433:5432" # the first number is the host port, the second is the container port
+      - "5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin123
       POSTGRES_DB: test-db
-      POSTGRES_HOST_AUTH_METHOD: trust
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "13000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:admin123@db:5432/test-db
